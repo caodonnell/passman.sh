@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 #
-# Script for managing passwords in a symmetrically encrypted file using GnuPG.
+# Script for managing usernames in a symmetrically encrypted file using GnuPG.
+
+# Since this is copied from pwd.sh, "password" refers to "username"
 
 set -o errtrace
 set -o nounset
 set -o pipefail
 
 gpg=$(command -v gpg || command -v gpg2)
-safe=${PWDSH_SAFE:=~/pwd.sh/pwd.sh.safe}
+safe=${PWDSH_SAFE:=~/pwd.sh/uname.sh.safe}
 
 
 fail () {
@@ -23,9 +25,10 @@ get_pass () {
 
   password=''
   prompt="${1}"
+  #read -p "${prompt}" -r password
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
-    if [[ ${char} == $'\0' ]] ; then
-      break
+	if [[ ${char} == $'\0' ]] ; then
+	          break
     elif [[ ${char} == $'\177' ]] ; then
       if [[ -z "${password}" ]] ; then
         prompt=""
@@ -38,6 +41,18 @@ get_pass () {
       password+="${char}"
     fi
   done
+
+  if [[ -z ${password} ]] ; then
+    fail "No password provided"
+  fi
+}
+
+get_uname () {
+  # Prompt for a password.
+
+  password=''
+  prompt="${1}"
+  read -p "${prompt}" -r password
 
   if [[ -z ${password} ]] ; then
     fail "No password provided"
@@ -86,21 +101,21 @@ read_pass () {
 }
 
 
-gen_pass () {
-  # Generate a password.
-
-  len=50
-  max=100
-  read -p "
-  Password length? (default: ${len}, max: ${max}) " length
-
-  if [[ ${length} =~ ^[0-9]+$ ]] ; then
-    len=${length}
-  fi
-
-  # base64: 4 characters for every 3 bytes
-  ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
-}
+#gen_pass () {
+#  # Generate a password.
+#
+#  len=50
+#  max=100
+#  read -p "
+#  Password length? (default: ${len}, max: ${max}) " length
+#
+#  if [[ ${length} =~ ^[0-9]+$ ]] ; then
+#    len=${length}
+#  fi
+#
+#  # base64: 4 characters for every 3 bytes
+#  ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
+#}
 
 
 write_pass () {
@@ -137,18 +152,18 @@ create_username () {
 
   read -p "
   Username: " username
-  read -p "
-  Generate password? (y/n, default: y) " rand_pass
+  #read -p "
+  #Generate password? (y/n, default: y) " rand_pass
 
-  if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
-    get_pass "
-  Enter password for \"${username}\": " ; echo
+  #if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
+  get_uname "
+  Enter name for \"${username}\": " ; echo
     userpass=$password
-  else
-    userpass=$(gen_pass)
-    echo "
-  Password: ${userpass}"
-  fi
+  #else
+  #  userpass=$(gen_pass)
+  #  echo "
+  #Password: ${userpass}"
+  #fi
 }
 
 
@@ -178,3 +193,4 @@ fi
 
 tput setaf 2 ; echo "
 Done" ; tput sgr0
+
