@@ -171,17 +171,18 @@ write_pass () {
   get_pass "
   Enter password to unlock safe: " ; echo
 
-  # If safe exists, decrypt it and filter out service, or bail on error.
-  # If successful, append new entry, or blank line.
+  # If safe exists, decrypt it.
+  # If successful, append new entry.
   # Filter out any blank lines.
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
   ( if [ -f ${safe} ] ; then
-      decrypt ${password} ${safe}
+      decrypt ${password} ${safe} || fail "Decyrption failed"
     fi ; \
     echo "${new_entry}") | \
     grep -ve "^[[:space:]]*$" | \
-    sort | encrypt ${password} ${safe}.new - || fail "Encryption failed"
+    sort --ignore-case | \
+    encrypt ${password} ${safe}.new - || fail "Encryption failed"
     mv ${safe}.new ${safe}
 }
 
@@ -212,7 +213,8 @@ delete_pass () {
    (decrypt ${password} ${safe} | \
    grep -vi "${strmatch}") | \
    grep -ve "^[[:space:]]*$" | \
-   sort | encrypt ${password} ${safe}.new - || fail "Encryption failed"
+   sort --ignore-case | \
+   encrypt ${password} ${safe}.new - || fail "Encryption failed"
    mv ${safe}.new ${safe}
 }
 
