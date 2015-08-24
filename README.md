@@ -36,6 +36,4 @@ A sample `gpg.conf` configuration file is provided for your consideration.
 
 # pwd.sh
 
-The original inspiration for passman.sh
-
-Script to manage passwords in an encrypted file using gpg. See the details from https://github.com/drduh/pwd.sh
+The original inspiration for passman.sh. It isn't necessary for passman.sh to work, but I've included it as a reference (in case something breaks in passman because bash scripting isn't my strong suit) as well as to give credit. Or in case I decide to just store passwords at some point. More information is in license.md and at [the pwd.sh github page](https://github.com/drduh/pwd.sh).
