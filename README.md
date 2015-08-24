@@ -11,6 +11,8 @@ Requires `gpg`, which can be installed with `brew install gpg`.
 
 Currently only for Mac OSX - uses `pbcopy` to copy passwords to the clipboard. For Linux, replace `pbcopy` with `xclip` (to send text to the clipboad with xlcip, use `xclip -selection clipboard`). If you're on Windows...figure it out yourself (sorry).
 
+You'll also need to adjust the path to the password safe (line 10 of passman.sh). I have my password safe in my Dropbox.
+
 # Use
 
 Run the script interactively with `./pwd.sh/passman.sh`.  Alternatively, create a symbolic link (e.g., `ln -s ~/pwd.sh/passman.sh ~/passman `) to access the script. 

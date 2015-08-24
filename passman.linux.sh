@@ -101,11 +101,11 @@ read_pass () {
   Which entry to read (service + username): " -r strmatch
       infonew=$(decrypt ${password} ${safe} | grep -i "${strmatch}")
       echo $infonew | awk '{print $3}' \
-                    | pbcopy \
+                    | xclip -selection clipboard \
                     | echo "(password copied to clipboard)" 
     else 
       echo ${info[1]}
-      echo ${info[2]} | pbcopy \
+      echo ${info[2]} | xclip -selection clipboard \
                       | echo "(password copied to clipboard)" 
     fi
   fi
