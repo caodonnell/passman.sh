@@ -75,7 +75,7 @@ read_pass () {
 
   if [[ -z "${2+x}" ]] ; then
     read -p "
-  Service or username to read (default: all)? " service 
+  Service or username to read (default: all): " service 
   else
     service="${2}"
   fi
@@ -86,19 +86,27 @@ read_pass () {
   if [[ -z ${service} || ${service} == "all" ]] ; then
     decrypt ${password} ${safe} || fail "Decryption failed"
   else
-    info=($(decrypt ${password} ${safe} | grep -i "${service}")) \
+    info=($(decrypt ${password} ${safe} | grep -i "${service} ")) \
                                 || fail "Decryption failed"  
     # Check for multiple matches
     # If multiple, print the services and usernames
     # If just one, print the username and copy the password to the clipboard
-    if [[ ${#info[@]} -ge 4 ]] ; then
+    if [[ ${#info[@]} -gt 3 ]] ; then
+      echo "
+  Matching entries for ${service}"
       for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
-        echo ${info[(($i*3))]} ${info[(($i*3+1))]}
+        echo "  "${info[(($i*3))]} ${info[(($i*3+1))]}
       done
+      read -p "
+  Which entry to read (service + username): " -r strmatch
+      infonew=$(decrypt ${password} ${safe} | grep -i "${strmatch}")
+      echo $infonew | awk '{print $3}' \
+                    | pbcopy \
+                    | echo "(password copied to clipboard)" 
     else 
       echo ${info[1]}
       echo ${info[2]} | pbcopy \
-                 | echo "(password copied to clipboard)" 
+                      | echo "(password copied to clipboard)" 
     fi
   fi
 }
@@ -112,7 +120,7 @@ gen_pass () {
   
   if [[ -z "${4+x}" ]] ; then
     read -p "
-  Password length? (default: ${len}, max: ${max}) " length
+  Password length (default: ${len}, max: ${max}): " length
   else
     length="${4}"
   fi
@@ -126,7 +134,7 @@ gen_pass () {
 }
 
 
-write_pass () {
+write_pass_old () {
   # Write a password in safe.
 
   # If no password provided, clear the entry by writing an empty line.
@@ -155,6 +163,60 @@ write_pass () {
 }
 
 
+write_pass () {
+  # Write a password in the safe.
+
+  new_entry="${service} ${username} ${userpass}"
+  
+  get_pass "
+  Enter password to unlock safe: " ; echo
+
+  # If safe exists, decrypt it and filter out service, or bail on error.
+  # If successful, append new entry, or blank line.
+  # Filter out any blank lines.
+  # Finally, encrypt it all to a new safe file, or fail.
+  # If successful, update to new safe file.
+  ( if [ -f ${safe} ] ; then
+      decrypt ${password} ${safe}
+    fi ; \
+    echo "${new_entry}") | \
+    grep -ve "^[[:space:]]*$" | \
+    sort | encrypt ${password} ${safe}.new - || fail "Encryption failed"
+    mv ${safe}.new ${safe}
+}
+
+
+delete_pass () {
+  # Delete a password from the safe.
+
+  get_pass "
+  Enter password to unlock safe: " ; echo
+
+  # Check for multiple matches to the service chosen
+   info=($(decrypt ${password} ${safe} | grep -i "${service} ")) \
+                                || fail "Decryption failed"
+
+   if [[ ${#info[@]} -gt 3 ]] ; then
+     echo "
+  Matching usernames for ${service}: "
+     for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+       echo "  "${info[((i*3+1))]}
+     done   
+     read -p "
+  Which username to delete: " -r uname
+     strmatch="$service $uname "
+   else
+     strmatch="$service"
+   fi
+
+   (decrypt ${password} ${safe} | \
+   grep -vi "${strmatch}") | \
+   grep -ve "^[[:space:]]*$" | \
+   sort | encrypt ${password} ${safe}.new - || fail "Encryption failed"
+   mv ${safe}.new ${safe}
+}
+
+
 create_username () {
   # Create a new username and password associated with a service.
 
@@ -176,7 +238,7 @@ create_username () {
 
   if [[ -z "${4+x}" ]] ; then
     read -p "
-  Generate password? (y/n, default: y) " rand_pass
+  Generate password (y/n, default: y): " rand_pass
   elif [[ "${4}" =~ $re ]] ; then
     rand_pass="num"
   else
@@ -214,7 +276,7 @@ sanity_check () {
 sanity_check
 
 if [[ -z "${1+x}" ]] ; then
-  read -p "Read, write, or delete password? (r/w/d, default: r) " action
+  read -p "Read, write, or delete password (r/w/d, default: r): " action
   printf "\n"
 else
   action="${1}"
@@ -227,11 +289,11 @@ if [[ "${action}" =~ ^([wW])$ ]] ; then
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
   if [[ -z "${2+x}" ]] ; then
     read -p "
-  Service to delete? " service
+  Service to delete: " service
   else
     service="${2}"
   fi
-  write_pass
+  delete_pass
 
 else 
   read_pass "$@"

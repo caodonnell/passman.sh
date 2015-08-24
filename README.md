@@ -1,7 +1,7 @@
  
 # passman.sh
 
-Script that creates an encypted file to store usernames and passwords for services such as gmail, dropbox, etc.
+Script that creates an encypted file to store usernames and passwords for services such as gmail, dropbox, etc. The file is alphabetized based on the name of the service followed by username and finally password.
 
 # Installation
 
@@ -15,11 +15,11 @@ Currently only for Mac OSX - uses `pbcopy` to copy passwords to the clipboard. F
 
 Run the script interactively with `./pwd.sh/passman.sh`.  Alternatively, create a symbolic link (e.g., `ln -s ~/pwd.sh/passman.sh ~/passman `) to access the script. 
 
-Type `r` to read a password(s) [note: `r` is the default behavior]. The script will ask if there's a relevant service or usename. The default option is to read all passwords, and the output will be `{service} {username} {password}`. If you pick a particular service or usename, the script will see if there are multiple matches. If there are, it will print all of the relevant services and usernames (format: `{service} {username}`); otherwise, the single username will be printed to the screen and its password will be copied to the clipboard. 
+Type `r` to read a password(s) [note: `r` is the default behavior]. The script will ask if there's a relevant service or username. The default option is to read all passwords, and the output will be `{service} {username} {password}`. If you pick a particular service or username, the script will see if there are multiple matches. If there are, it will print all of the relevant service and username combinations. It will ask you to pick the entry you wish to find the password for (note: you only have to input enough so that the choice is unique), and that password will be copied to the clipboard. If the choice of service is unique, the username will be printed to the screen and the password will be copied to the clipboard. 
 
-Type `w` to write a password. The script will ask for the relevant service (gmail, netflix, dropbox, etc.), username, and password. Currently, this manager only works with 1 username/password combination per service (e.g., you can't have 3 accounts linked with the service 'gmail'). To add multiple accounts, customize the service name (e.g., 'gmail-school', 'gmail-personal', etc.).
+Type `w` to write a password. The script will ask for the relevant service (gmail, netflix, dropbox, etc.), username, and password. It is currently possible to have mutliple username and password combinations linked to the same service (e.g., if you have 3 gmail accounts, they can all be listed as 'gmail', though I'd still suggest having unique names for each account (e.g., 'gmail-school', 'gmail-personal', etc.)
 
-Type `d` to delete a password. The script will ask for the relevant service.
+Type `d` to delete a password. The script will ask for the relevant service. If there are multiple username and password combinations associated with the service, it will ask you to pick the relevant username for deletion
 
 Options can also be passed on the command line. Here are some examples:
 
