@@ -86,26 +86,20 @@ read_pass () {
   if [[ -z ${service} || ${service} == "all" ]] ; then
     decrypt ${password} ${safe} || fail "Decryption failed"
   else
-   tmpfile=$(mktemp /tmp/scripttmp)
-    
-    decrypt ${password} ${safe} | grep -i "${service}" > "$tmpfile" \
-                                || fail "Decryption failed"
-
-    nentries=$(wc -l < "$tmpfile")
-
+    info=($(decrypt ${password} ${safe} | grep -i "${service}")) \
+                                || fail "Decryption failed"  
     # Check for multiple matches
     # If multiple, print the services and usernames
     # If just one, print the username and copy the password to the clipboard
-    if [[ $nentries -ge 2 ]] ; then
-      cat "$tmpfile" | cut -d " " -f1 -f2
+    if [[ ${#info[@]} -ge 4 ]] ; then
+      for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+        echo ${info[(($i*3))]} ${info[(($i*3+1))]}
+      done
     else 
-      cat "$tmpfile" | awk '{print $2}'
-      cat "$tmpfile" | awk '{print $3}' \
-                     | pbcopy \
-                     | echo "(password copied to clipboard)" 
+      echo ${info[1]}
+      echo ${info[2]} | pbcopy \
+                 | echo "(password copied to clipboard)" 
     fi
-
-    rm "$tmpfile"
   fi
 }
 
