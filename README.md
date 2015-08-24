@@ -27,7 +27,7 @@ Options can also be passed on the command line. Here are some examples:
 
 `./passman.sh r mygmail@gmail.com` to read the password for 'mygmail [at] gmail [dot]com'.
 
-`./pwd.sh d dropbox` to delete the password for 'dropbox'.
+`./pwd.sh d gmail` to delete the password for 'gmail'.
 
 The script and `pwd.sh.safe` encrypted file can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
