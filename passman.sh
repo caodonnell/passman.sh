@@ -7,7 +7,7 @@ set -o nounset
 set -o pipefail
 
 gpg=$(command -v gpg || command -v gpg2)
-safe=${PWDSH_SAFE:=~/pwd.sh/passman.sh.safe}
+safe=${PWDSH_SAFE:=~/Dropbox/misc/passman.sh.safe}
 
 
 fail () {
@@ -75,7 +75,7 @@ read_pass () {
 
   if [[ -z "${2+x}" ]] ; then
     read -p "
-  Service to read (default: all)? " service 
+  Service or username to read (default: all)? " service 
   else
     service="${2}"
   fi
@@ -86,34 +86,26 @@ read_pass () {
   if [[ -z ${service} || ${service} == "all" ]] ; then
     decrypt ${password} ${safe} || fail "Decryption failed"
   else
-    info=$(decrypt ${password} ${safe} | grep -i "${service} ") \
+   tmpfile=$(mktemp /tmp/scripttmp)
+    
+    decrypt ${password} ${safe} | grep -i "${service}" > "$tmpfile" \
                                 || fail "Decryption failed"
 
-    # Check for multiple entries or no entries
-    # If all's good, then print username and copy the password
-    nentries=$(echo $info | grep -oi "${service} " | wc -l)
-    if [[  $nentries -ge 2 ]] ; then
-      read -p "
-  Username (default: print all usernames)? " uname
-      if [[ -z ${uname} ]] ; then
-        echo $info | grep -i "${service} " | while read -r line ; do
-          awk '{print $2}'
-        done
-      else
-        infonew=$(echo $info | grep -i "${service} ${uname}")
-        echo $infonew | awk '{print $3}' \
-                   | pbcopy \
-                   | echo "(password copied to clipboard)"
-      fi
-    elif [[ $nentries -eq 0 ]] ; then
-      fail "No entries for ${service}"
+    nentries=$(wc -l < "$tmpfile")
+
+    # Check for multiple matches
+    # If multiple, print the services and usernames
+    # If just one, print the username and copy the password to the clipboard
+    if [[ $nentries -ge 2 ]] ; then
+      cat "$tmpfile" | cut -d " " -f1 -f2
     else 
-      echo $info | awk '{print $2}'
-      echo $info | awk '{print $3}' \
-                 | pbcopy \
-                 | echo "(password copied to clipboard)"
+      cat "$tmpfile" | awk '{print $2}'
+      cat "$tmpfile" | awk '{print $3}' \
+                     | pbcopy \
+                     | echo "(password copied to clipboard)" 
     fi
- 
+
+    rm "$tmpfile"
   fi
 }
 

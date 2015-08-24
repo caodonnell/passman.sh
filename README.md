@@ -15,7 +15,7 @@ Currently only for Mac OSX - uses `pbcopy` to copy passwords to the clipboard. F
 
 Run the script interactively with `./pwd.sh/passman.sh`.  Alternatively, create a symbolic link (e.g., `ln -s ~/pwd.sh/passman.sh ~/passman `) to access the script. 
 
-Type `r` to read a password(s) [note: `r` is the default behavior]. The script will ask if there's a relevant service. The default option is to read all passwords, and the output will be `{service} {username} {password}`. If you pick a particular service, the username will be printed to the screen and the password will be copied to the clipboard. 
+Type `r` to read a password(s) [note: `r` is the default behavior]. The script will ask if there's a relevant service or usename. The default option is to read all passwords, and the output will be `{service} {username} {password}`. If you pick a particular service or usename, the script will see if there are multiple matches. If there are, it will print all of the relevant services and usernames (format: `{service} {username}`); otherwise, the single username will be printed to the screen and its password will be copied to the clipboard. 
 
 Type `w` to write a password. The script will ask for the relevant service (gmail, netflix, dropbox, etc.), username, and password. Currently, this manager only works with 1 username/password combination per service (e.g., you can't have 3 accounts linked with the service 'gmail'). To add multiple accounts, customize the service name (e.g., 'gmail-school', 'gmail-personal', etc.).
 
@@ -25,7 +25,9 @@ Options can also be passed on the command line. Here are some examples:
 
 `./passman.sh w gmail mygmail@gmail.com 30` to create a password for 'gmail' with a length of 30 characters for the username 'mygmail [at] gmail [dot] com'. Append `<space>q` to suppress password output.
 
-`./passman.sh r mygmail@gmail.com` to read the password for 'mygmail [at] gmail [dot]com'.
+`./passman.sh w gmail mygmail@gmail.com mygmailpassword` to set 'mygmailpasword' as the password for 'gmail' with the username 'mygmail [at] gmail [dot] com'.
+
+`./passman.sh r gmail` to read the password for 'gmail'.
 
 `./pwd.sh d gmail` to delete the password for 'gmail'.
 
