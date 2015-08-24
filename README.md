@@ -1,4 +1,4 @@
-
+ 
 # passman.sh
 
 Script that creates an encypted file to store usernames and passwords for services such as gmail, dropbox, etc.
@@ -9,7 +9,7 @@ Script that creates an encypted file to store usernames and passwords for servic
 
 Requires `gpg`, which can be installed with `brew install gpg`.
 
-Currently only for Mac OSX - uses `pbcopy` to copy passwords to the clipboard. For Linux, replace `pbcopy` with `xclip` (to send text to the clipboad with xlcip, use `xclip -selection clipboard`). If you're on Windows...figure it out yourself.
+Currently only for Mac OSX - uses `pbcopy` to copy passwords to the clipboard. For Linux, replace `pbcopy` with `xclip` (to send text to the clipboad with xlcip, use `xclip -selection clipboard`). If you're on Windows...figure it out yourself (sorry).
 
 # Use
 
@@ -23,9 +23,9 @@ Type `d` to delete a password. The script will ask for the relevant service.
 
 Options can also be passed on the command line. Here are some examples:
 
-`./passman.sh w gmail mygmail@gmail.com 30` to create a password for 'gmail' with a length of 30 characters for the username 'mygmail@gmail.com'. Append `<space>q` to suppress password output.
+`./passman.sh w gmail mygmail@gmail.com 30` to create a password for 'gmail' with a length of 30 characters for the username 'mygmail [at] gmail [dot] com'. Append `<space>q` to suppress password output.
 
-`./passman.sh r mygmail@gmail.com` to read the password for 'mygmail@gmail.com'.
+`./passman.sh r mygmail@gmail.com` to read the password for 'mygmail [at] gmail [dot]com'.
 
 `./pwd.sh d dropbox` to delete the password for 'dropbox'.
 
