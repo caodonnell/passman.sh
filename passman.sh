@@ -23,6 +23,7 @@ get_pass () {
 
   password=''
   prompt="${1}"
+
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then
       break
@@ -72,6 +73,13 @@ read_pass () {
     fail "No passwords found"
   fi
 
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Service to read (default: all)? " service 
+  else
+    service="${2}"
+  fi
+
   get_pass "
   Enter password to unlock safe: " ; printf "\n\n"
 
@@ -115,8 +123,13 @@ gen_pass () {
 
   len=50
   max=100
-  read -p "
+  
+  if [[ -z "${4+x}" ]] ; then
+    read -p "
   Password length? (default: ${len}, max: ${max}) " length
+  else
+    length="${4}"
+  fi
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then
     len=${length}
@@ -157,23 +170,48 @@ write_pass () {
 
 
 create_username () {
-  # Create a new username and password.
+  # Create a new username and password associated with a service.
 
-  read -p "
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
   Service: " service
-  read -p "
+  else
+    service="${2}"
+  fi
+
+  if [[ -z "${3+x}" ]] ; then
+    read -p "
   Username: " -r username
-  read -p "
+  else
+    username="${3}"
+  fi
+
+  re='^[0-9]+$'
+
+  if [[ -z "${4+x}" ]] ; then
+    read -p "
   Generate password? (y/n, default: y) " rand_pass
+  elif [[ "${4}" =~ $re ]] ; then
+    rand_pass="num"
+  else
+    rand_pass="pass"
+  fi
+
 
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
     get_pass "
   Enter password: " ; echo
     userpass=$password
+
+  elif [[ "${rand_pass}" = "pass" ]] ; then
+    userpass="${4}"
+
   else
-    userpass=$(gen_pass)
+    userpass=$(gen_pass "$@")
+    #if [[ -z "${4+x}" || ! "${4}" =~ ^([qQ])$ ]] ; then 
     echo "
   Password: ${userpass}"
+    #fi
   fi
 }
 
@@ -189,17 +227,28 @@ sanity_check () {
 
 sanity_check
 
-read -p "Read, write, or delete password? (r/w/d, default: r) " action
-printf "\n"
+if [[ -z "${1+x}" ]] ; then
+  read -p "Read, write, or delete password? (r/w/d, default: r) " action
+  printf "\n"
+else
+  action="${1}"
+fi
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
-  create_username && write_pass
+  create_username "$@"
+  write_pass
+
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
-  read -p "
-  Service to delete? " service && write_pass
-else
-  read -p "
-  Service to read (default: all)? " service && read_pass
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Service to delete? " service
+  else
+    service="${2}"
+  fi
+  write_pass
+
+else 
+  read_pass "$@"
 fi
 
 tput setaf 2 ; echo "
