@@ -208,10 +208,10 @@ create_username () {
 
   else
     userpass=$(gen_pass "$@")
-    #if [[ -z "${4+x}" || ! "${4}" =~ ^([qQ])$ ]] ; then 
+    if [[ -z "${5+x}" || ! "${5}" =~ ^([qQ])$ ]] ; then 
     echo "
   Password: ${userpass}"
-    #fi
+    fi
   fi
 }
 
