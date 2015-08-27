@@ -7,7 +7,7 @@ set -o nounset
 set -o pipefail
 
 gpg=$(command -v gpg || command -v gpg2)
-safe=${PWDSH_SAFE:=~/Dropbox/misc/passman.sh.safe}
+safe=${PWDSH_SAFE:=~/Dropbox/misc/passman.sh.safe.backup.08242015}
 
 
 fail () {
@@ -15,6 +15,13 @@ fail () {
 
   tput setaf 1 ; echo "Error: ${1}" ; tput sgr0
   exit 1
+}
+
+containsElement () {
+  # Check if an array contains a specific string
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  return 1
 }
 
 
@@ -90,23 +97,29 @@ read_pass () {
                                 || fail "Decryption failed"  
     # Check for multiple matches
     # If multiple, print the services and usernames
+    # Ask if it should print all passwords or 
+    # if a specific username should be read.
     # If just one, print the username and copy the password to the clipboard
     if [[ ${#info[@]} -gt 3 ]] ; then
       echo "
-  Matching entries for ${service}"
+  Matching usernames for ${service}"
       for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
-        echo "  "${info[(($i*3))]} ${info[(($i*3+1))]}
+        # echo "  "${info[(($i*3))]} ${info[(($i*3+1))]}
+        echo "  " ${info[(($i*3+1))]}
       done
       read -p "
-  Which entry to read (service + username): " -r strmatch
-      infonew=$(decrypt ${password} ${safe} | grep -i "${strmatch}")
-      echo $infonew | awk '{print $3}' \
-                    | pbcopy \
-                    | echo "(password copied to clipboard)" 
+  Which username to read (default: all): " -r uname ; printf "\n\n"
+      if [[ -z ${uname} || ${uname} == "all" ]] ; then
+        decrypt ${password} ${safe} | grep -i "${service} "
+      else
+        infonew=($(decrypt ${password} ${safe} | grep -i "${service} ${uname}"))
+        printf ${info[2]} | pbcopy \
+                          | echo "(password copied to clipboard)" 
+      fi
     else 
       echo ${info[1]}
-      echo ${info[2]} | pbcopy \
-                      | echo "(password copied to clipboard)" 
+      printf ${info[2]} | pbcopy \
+                        | echo "(password copied to clipboard)" 
     fi
   fi
 }
@@ -134,33 +147,33 @@ gen_pass () {
 }
 
 
-write_pass_old () {
-  # Write a password in safe.
-
-  # If no password provided, clear the entry by writing an empty line.
-  if [ -z ${userpass+x} ] ; then
-    new_entry=" "
-  else
-    new_entry="${service} ${username} ${userpass}"
-  fi
-
-  get_pass "
-  Enter password to unlock safe: " ; echo
-
-  # If safe exists, decrypt it and filter out service, or bail on error.
-  # If successful, append new entry, or blank line.
-  # Filter out any blank lines.
-  # Finally, encrypt it all to a new safe file, or fail.
-  # If successful, update to new safe file.
-  ( if [ -f ${safe} ] ; then
-      decrypt ${password} ${safe} | \
-      grep -vi "${service} " || return
-    fi ; \
-    echo "${new_entry}") | \
-    grep -ve "^[[:space:]]*$" | \
-    encrypt ${password} ${safe}.new - || fail "Encryption failed"
-    mv ${safe}.new ${safe}
-}
+#write_pass () {
+#  # Write a password in safe.
+#
+#  # If no password provided, clear the entry by writing an empty line.
+#  if [ -z ${userpass+x} ] ; then
+#    new_entry=" "
+#  else
+#    new_entry="${service} ${username} ${userpass}"
+#  fi
+#
+#  get_pass "
+#  Enter password to unlock safe: " ; echo
+#
+#  # If safe exists, decrypt it and filter out service, or bail on error.
+#  # If successful, append new entry, or blank line.
+#  # Filter out any blank lines.
+#  # Finally, encrypt it all to a new safe file, or fail.
+#  # If successful, update to new safe file.
+#  ( if [ -f ${safe} ] ; then
+#      decrypt ${password} ${safe} | \
+#      grep -vi "${service} " || return
+#    fi ; \
+#    echo "${new_entry}") | \
+#    grep -ve "^[[:space:]]*$" | \
+#    encrypt ${password} ${safe}.new - || fail "Encryption failed"
+#    mv ${safe}.new ${safe}
+#}
 
 
 write_pass () {
@@ -204,8 +217,12 @@ delete_pass () {
        echo "  "${info[((i*3+1))]}
      done   
      read -p "
-  Which username to delete: " -r uname
-     strmatch="$service $uname "
+  Which username to delete: " -r username
+    if containsElement "${username}" "${info[@]}" ; then
+      strmatch="${service} ${username}"
+    else
+      fail "Username is not allowed"
+    fi
    else
      strmatch="$service"
    fi
@@ -218,16 +235,63 @@ delete_pass () {
    mv ${safe}.new ${safe}
 }
 
+update_pass () {
+  # Update a password from the safe.
+
+  get_pass "
+  Enter password to unlock safe: " ; echo
+
+  safepass="$password"
+
+  # Check for multiple matches to the service chosen
+  info=($(decrypt ${safepass} ${safe} | grep -i "${service} ")) \
+                                || fail "Decryption failed"
+
+  if [[ ${#info[@]} -gt 3 ]] ; then
+    echo "
+  Matching usernames for ${service}: "
+    for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+      echo "  "${info[((i*3+1))]}
+    done   
+    read -p "
+  Which username to update: " -r username
+    if containsElement "${username}" "${info[@]}" ; then
+      strmatch="${service} ${username}"
+    else
+      fail "Username is not allowed"
+    fi
+  else
+    if [[ -z "$username" ]] ;  then
+      username="${info[1]}"
+      service="${service} ${username}"
+    fi
+    strmatch="${service}"
+  fi
+
+  create_pass "$@"   
+
+  new_entry="${service} ${userpass}"
+
+  # If safe exists, decrypt it.
+  # If successful, append new entry.
+  # Filter out any blank lines.
+  # Finally, encrypt it all to a new safe file, or fail.
+  # If successful, update to new safe file.
+  ( if [ -f ${safe} ] ; then
+      decrypt ${safepass} ${safe} | grep -vi "${strmatch}" \
+       || fail "Decyrption failed"
+    fi ; \
+    echo "${new_entry}") | \
+   grep -ve "^[[:space:]]*$" | \
+   sort --ignore-case | \
+   encrypt ${safepass} ${safe}.new - || fail "Encryption failed"
+   mv ${safe}.new ${safe}
+}
+
+
 
 create_username () {
-  # Create a new username and password associated with a service.
-
-  if [[ -z "${2+x}" ]] ; then
-    read -p "
-  Service: " service
-  else
-    service="${2}"
-  fi
+  # Create a new username associated with a service.
 
   if [[ -z "${3+x}" ]] ; then
     read -p "
@@ -235,6 +299,11 @@ create_username () {
   else
     username="${3}"
   fi
+}
+
+
+create_pass () {
+  # Create a new password
 
   re='^[0-9]+$'
 
@@ -278,7 +347,7 @@ sanity_check () {
 sanity_check
 
 if [[ -z "${1+x}" ]] ; then
-  read -p "Read, write, or delete password (r/w/d, default: r): " action
+  read -p "Read, write, delete, or update password (r/w/d/u, default: r): " action
   printf "\n"
 else
   action="${1}"
@@ -288,7 +357,14 @@ fi
 cp ${safe} ${safe}.backup
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Service to delete: " service
+  else
+    service="${2}"
+  fi
   create_username "$@"
+  create_pass "$@"
   write_pass
 
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
@@ -298,7 +374,24 @@ elif [[ "${action}" =~ ^([dD])$ ]] ; then
   else
     service="${2}"
   fi
+  if [[ ! -z "${3+x}" ]] ; then
+    service="${service} ${3}"
+  fi
   delete_pass
+
+elif [[ "${action}" =~ ^([uU])$ ]] ; then
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Service to update: " service
+  else
+    service="${2}"
+  fi
+  if [[ ! -z "${3+x}" ]] ; then
+    username="${3}"
+    service="${service} ${username}"
+    # echo $service
+  fi
+  update_pass "$@"
 
 else 
   read_pass "$@"

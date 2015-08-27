@@ -5,7 +5,7 @@ Script that creates an encypted file to store usernames and passwords for servic
 
 # Installation
 
-    git clone https://github.com/caodonnell/pwd.sh
+    git clone https://github.com/caodonnell/passman.sh
 
 Requires `gpg`, which can be installed with `brew install gpg`.
 
@@ -15,13 +15,15 @@ You'll also need to adjust the path to the password safe (line 10 of passman.sh)
 
 # Use
 
-Run the script interactively with `./pwd.sh/passman.sh`.  Alternatively, create a symbolic link (e.g., `ln -s ~/pwd.sh/passman.sh ~/passman `) to access the script. 
+Run the script interactively with `./passman.sh/passman.sh`.  Alternatively, create a symbolic link (e.g., `ln -s ~/passman.sh/passman.sh ~/passman `) to access the script. 
 
-Type `r` to read a password(s) [note: `r` is the default behavior]. The script will ask if there's a relevant service or username. The default option is to read all passwords, and the output will be `{service} {username} {password}`. If you pick a particular service or username, the script will see if there are multiple matches. If there are, it will print all of the relevant service and username combinations. It will ask you to pick the entry you wish to find the password for (note: you only have to input enough so that the choice is unique), and that password will be copied to the clipboard. If the choice of service is unique, the username will be printed to the screen and the password will be copied to the clipboard. 
+Type `r` to read a password(s) [note: `r` is the default behavior]. The script will ask if there's a relevant service or username. The default option is to read all passwords, and the output will be `{service} {username} {password}`. If you pick a particular service or username, the script will see if there are multiple matches. If there are, it will print all of the relevant service and username combinations. It will ask you if you wish to pick a specific entry (note: you only have to input enough so that the choice is unique). If you do not choose a particular username, it will use its default behavior, which is to print all of the relevant entries in the `{service} {username} {password}` format. If you do choose a specific entry, that password will be copied to the clipboard. If the choice of service is unique, the username will be printed to the screen and the password will be copied to the clipboard. 
 
 Type `w` to write a password. The script will ask for the relevant service (gmail, netflix, dropbox, etc.), username, and password. It is currently possible to have mutliple username and password combinations linked to the same service (e.g., if you have 3 gmail accounts, they can all be listed as 'gmail', though I'd still suggest having unique names for each account (e.g., 'gmail-school', 'gmail-personal', etc.)
 
-Type `d` to delete a password. The script will ask for the relevant service. If there are multiple username and password combinations associated with the service, it will ask you to pick the relevant username for deletion
+Type `d` to delete a password. The script will ask for the relevant service. If there are multiple username and password combinations associated with the service, it will ask you to pick the relevant username for deletion. If you mistype the username, it will throw an error.
+
+Type `u` to update a password. The script will ask for the relevant service. If there are multiple usernames associated with that service, it will ask you to pick the relevant username. An incorrect username from a typo will cause the script to exit with an error. You will be asked if you want the script to generate a password or enter one of your own, and it will update the entry with the new password.
 
 Options can also be passed on the command line. Here are some examples:
 
@@ -31,7 +33,9 @@ Options can also be passed on the command line. Here are some examples:
 
 `./passman.sh r gmail` to read the password for 'gmail'.
 
-`./pwd.sh d gmail` to delete the password for 'gmail'.
+`./passman.sh d gmail` to delete the password for 'gmail'.
+
+`./passman.sh u gmail mygmail@gmail.com 30` to update the passowrd for 'mygmail [at] gmail [dot] com' with a new password with a length of 30 characters.
 
 The script and `pwd.sh.safe` encrypted file can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
