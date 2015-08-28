@@ -7,7 +7,7 @@ set -o nounset
 set -o pipefail
 
 gpg=$(command -v gpg || command -v gpg2)
-safe=${PWDSH_SAFE:=~/Dropbox/misc/passman.sh}
+safe=${PWDSH_SAFE:=~/Dropbox/misc/passman.sh.safe}
 
 
 fail () {
@@ -19,9 +19,18 @@ fail () {
 
 containsElement () {
   # Check if an array contains a specific string
-  local e
-  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
-  return 1
+  local e=0
+  for str in "${@:2}" ; do
+    # echo $str
+    shopt -s nocasematch
+    if [[ "$str" == *"$1"* ]] ; then
+      echo $e
+      return
+    else
+      ((e++))
+    fi
+  done
+  echo "-1"
 }
 
 
@@ -203,36 +212,41 @@ write_pass () {
 delete_pass () {
   # Delete a password from the safe.
 
-  get_pass "
-  Enter password to unlock safe: " ; echo
-
-  # Check for multiple matches to the service chosen
-   info=($(decrypt ${password} ${safe} | grep -i "${service} ")) \
-                                || fail "Decryption failed"
-
-   if [[ ${#info[@]} -gt 3 ]] ; then
-     echo "
-  Matching usernames for ${service}: "
-     for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
-       echo "  "${info[((i*3+1))]}
-     done   
-     read -p "
-  Which username to delete: " -r username
-    if containsElement "${username}" "${info[@]}" ; then
-      strmatch="${service} ${username}"
-    else
-      fail "Username is not allowed"
-    fi
-   else
-     strmatch="$service"
+  read -p "
+    Are you sure you wish to delete an entry (y/n): " -r answer
+  
+  if [[ "${answer}" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+    get_pass "
+    Enter password to unlock safe: " ; echo
+  
+    # Check for multiple matches to the service chosen
+     info=($(decrypt ${password} ${safe} | grep -i "${service} ")) \
+                                  || fail "Decryption failed"
+  
+     if [[ ${#info[@]} -gt 3 ]] ; then
+       echo "
+    Matching usernames for ${service}: "
+       for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+         echo "  "${info[((i*3+1))]}
+       done   
+       read -p "
+    Which username to delete: " -r username
+      if containsElement "${username}" "${info[@]}" ; then
+        strmatch="${service} ${username}"
+      else
+        fail "Username is not allowed"
+      fi
+     else
+       strmatch="$service"
+     fi
+  
+     (decrypt ${password} ${safe} | \
+     grep -vi "${strmatch}") | \
+     grep -ve "^[[:space:]]*$" | \
+     sort --ignore-case | \
+     encrypt ${password} ${safe}.new - || fail "Encryption failed"
+     mv ${safe}.new ${safe}
    fi
-
-   (decrypt ${password} ${safe} | \
-   grep -vi "${strmatch}") | \
-   grep -ve "^[[:space:]]*$" | \
-   sort --ignore-case | \
-   encrypt ${password} ${safe}.new - || fail "Encryption failed"
-   mv ${safe}.new ${safe}
 }
 
 update_pass () {
@@ -248,29 +262,37 @@ update_pass () {
                                 || fail "Decryption failed"
 
   if [[ ${#info[@]} -gt 3 ]] ; then
-    echo "
-  Matching usernames for ${service}: "
-    for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
-      echo "  "${info[((i*3+1))]}
-    done   
-    read -p "
-  Which username to update: " -r username
-    if containsElement "${username}" "${info[@]}" ; then
-      strmatch="${service} ${username}"
+    if [[ ! -z "${3+x}" ]] ; then
+      uname="${3}"
     else
+      echo "
+  Matching usernames for ${service}: "
+      for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+        echo "  "${info[((i*3+1))]}
+      done   
+      read -p "
+  Which username to update: " -r uname
+    fi
+    index=$(containsElement "${uname}" "${info[@]}")
+    if [[ $index -lt 0 ]] ; then
       fail "Username is not allowed"
     fi
+    username="${info[$index]}"
+    strmatch="${service} ${username}"
   else
-    if [[ -z "$username" ]] ;  then
-      username="${info[1]}"
-      service="${service} ${username}"
+    username="${info[1]}"
+    if [[ ! -z "${3+x}" ]] ;  then
+      shopt -s nocasematch
+      if [[ "${3}" != "$username" ]] ; then
+        fail "Username is not allowed"
+      fi
     fi
     strmatch="${service}"
   fi
 
   create_pass "$@"   
 
-  new_entry="${service} ${userpass}"
+  new_entry="${service} ${username} ${userpass}"
 
   # If safe exists, decrypt it.
   # If successful, append new entry.
@@ -386,11 +408,13 @@ elif [[ "${action}" =~ ^([uU])$ ]] ; then
   else
     service="${2}"
   fi
-  if [[ ! -z "${3+x}" ]] ; then
-    username="${3}"
-    service="${service} ${username}"
-    # echo $service
-  fi
+#  if [[ ! -z "${3+x}" ]] ; then
+#    uname="${3}"
+#    service="${service} ${uname}"
+#    # echo $service
+#  else
+#    uname=""
+#  fi
   update_pass "$@"
 
 else 
