@@ -381,7 +381,7 @@ cp ${safe} ${safe}.backup
 if [[ "${action}" =~ ^([wW])$ ]] ; then
   if [[ -z "${2+x}" ]] ; then
     read -p "
-  Service to delete: " service
+  Service to write: " service
   else
     service="${2}"
   fi
