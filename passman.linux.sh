@@ -112,7 +112,7 @@ read_pass () {
     if [[ ${#info[@]} -gt 3 ]] ; then
       echo "
   Matching usernames for ${service}"
-      for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+      for (( i=0; i<${#info[@]}/3; i++ )) ; do
         # echo "  "${info[(($i*3))]} ${info[(($i*3+1))]}
         echo "  " ${info[(($i*3+1))]}
       done
@@ -226,7 +226,7 @@ delete_pass () {
      if [[ ${#info[@]} -gt 3 ]] ; then
        echo "
     Matching usernames for ${service}: "
-       for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+       for (( i=0; i<${#info[@]}/3; i++ )) ; do
          echo "  "${info[((i*3+1))]}
        done   
        read -p "
@@ -267,7 +267,7 @@ update_pass () {
     else
       echo "
   Matching usernames for ${service}: "
-      for (( i=0; i<((${#info[@]}/3)); i++ )) ; do
+      for (( i=0; i<${#info[@]}/3; i++ )) ; do
         echo "  "${info[((i*3+1))]}
       done   
       read -p "
